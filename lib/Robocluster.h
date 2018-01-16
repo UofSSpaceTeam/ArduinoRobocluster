@@ -1,10 +1,10 @@
 #ifndef ROBOCLUSTER
 #define ROBOCLUSTER
 
+#include "Robocluster.cpp"
 #include <map>
 #include <list>
 #include <ArduinoJson.h>
-
 
 /*
  * =============== Data Types ===============
