@@ -18,11 +18,11 @@
 class Task {
 public:
 
-    Task(void (*run)(void),
-            unsigned long int call_time, unsigned long int interval);
+    Task(void (*run_callback)(void),
+            unsigned long int call_time_in, unsigned long int interval_in);
 
     /* Constructor assigning 0 to call_time and interval. */
-    Task(void (*run)(void));
+    Task(void (*run_callback)(void));
 
     /* Pointer to a function to run. Function should return void,
      * and take no arguments.

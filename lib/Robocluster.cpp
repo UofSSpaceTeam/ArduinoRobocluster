@@ -3,33 +3,37 @@
 #include <map>
 #include <list>
 #include <ArduinoJson.h>
-using namespace std;
 
-
-// note that each int is 4 bytes, usually want 8 bytes
-
-/* This is a function pointer, *run is name of pointer */
 class Task{
-    private:
-        
-
     public:
         unsigned long int call_time, interval;
         void (*run)(void) //pointer to function to run, function should return void
 
         //constructor with all arguments
-        Task(void (*run)(void),
-            unsigned long int call_time, unsigned long int interval){
-            call_time = call_time;
-            interval = interval;
-        }
+        Task(void (*run_callback)(void), unsigned long int call_time, 
+            unsigned long int interval);
 
         //constructor with no arguments
-        Task(void (*run)(void)){
-            call_time = 0; //assume it's a 1 time call
-            interval = 0;
-        }
+        Task(void (*run_callback)(void));
 }
 
+Task::Task(void (*run_callback)(void)), unsigned long int call_time_in, unsigned long int interval_in){
+    run = run_callback;
+    call_time = call_time;
+    interval = interval;  
+}
+
+Task::Task(void (*run_callback)(void)){
+    run = run_callback;
+    call_time = 0;
+    interval = 0;    
+}
+
+class Port{
+    private:
+
+    public:
+
+}
 
 
