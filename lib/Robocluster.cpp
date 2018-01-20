@@ -4,7 +4,13 @@
 #include <list>
 #include <ArduinoJson.h>
 
-class Task{
+
+char *g_device_name;
+void run_event_loop();
+void add_task(Task t);
+void set_device_name(char *name);
+
+class Task{ //how task is added 
     public:
         unsigned long int call_time, interval;
         void (*run)(void) //pointer to function to run, function should return void
@@ -29,11 +35,41 @@ Task::Task(void (*run_callback)(void)){
     interval = 0;    
 }
 
-class Port{
-    private:
+// Run any events in the event loop.
+void run_event_loop(){
+    while(1){
+        if (millis() > g_tasks.front().call_time )
+            Task t = g_tasks.front();
+            g_tasks.pop_front(); //delete front
+            t.run();
+            if (t.interval > 0){
+                t.call_time = t.interval + millis(); //call again in interval seconds
+                add_task(t);
+            }
+    }
+}
 
-    public:
+//add task back onto end of event loop
+void add_task(Task t){
+    unsigned char index = 0;
+    bool inserted = false;
 
+    for (std::list<Task>::const_iterator iterator = g_tasks.begin(); iterator != g_tasks.end(); ++iterator){
+        Task& iter = *iterator;
+        if (t.call_time > iter.call_time){
+            g_tasks.insert (index, t);
+            inserted = true;
+            break;
+        }
+        index ++; //increment with each loop
+    }
+    if (inserted == false){ //if the task wasn't inserted after the loop ended it must have the largest call time
+        g_tasks.push_back(t);
+    }
+}
+
+void set_device_name(char *name){
+    g_device_name = name;
 }
 
 

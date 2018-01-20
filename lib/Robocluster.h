@@ -49,25 +49,25 @@ public:
  */
 typedef enum {JSON, VESC} Encoding;
 
-/* A transport protocol such as Serial, I2C, SPI, etc.
- * Abstract class, so you have to create subclasses for
- * Serial, I2C, implementations.
- * I'm also not sure how we want to go about instanciating ports.
- */
-class Port {
-public:
-    virtual byte *read();
-    virtual void write(byte *data);
-    bool enabled; // public to make things simple, might add getters/setters in future
-    Encoding encoding = JSON; // JSON by default
-};
+// /* A transport protocol such as Serial, I2C, SPI, etc.
+//  * Abstract class, so you have to create subclasses for
+//  * Serial, I2C, implementations.
+//  * I'm also not sure how we want to go about instanciating ports.
+//  */
+// class Port {
+// public:
+//     virtual byte *read();
+//     virtual void write(byte *data);
+//     bool enabled; // public to make things simple, might add getters/setters in future
+//     Encoding encoding = JSON; // JSON by default
+// };
 
-/* This one will need an actuall implementation. */
-class SerialPort: public Port{
-public:
-    byte *read();
-    void write(byte *data);
-};
+// /* This one will need an actuall implementation. */
+// class SerialPort: public Port{
+// public:
+//     byte *read();
+//     void write(byte *data);
+// };
 
 /* Event struct */
 struct Event{
