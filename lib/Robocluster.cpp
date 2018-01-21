@@ -5,11 +5,12 @@
 #include <ArduinoJson.h>
 
 
-char *g_device_name;
+char *g_device_name, sender, type, data;
 void run_event_loop();
 void add_task(Task t);
 void set_device_name(char *name);
 
+/* CLASSES */
 class Task{ //how task is added 
     public:
         unsigned long int call_time, interval;
@@ -35,10 +36,12 @@ Task::Task(void (*run_callback)(void)){
     interval = 0;    
 }
 
+
+/* LIBRARY FUNCTIONS */
 // Run any events in the event loop.
 void run_event_loop(){
     while(1){
-        if (millis() > g_tasks.front().call_time )
+        if (millis() > g_tasks.front().call_time ) {
             Task t = g_tasks.front();
             g_tasks.pop_front(); //delete front
             t.run();
@@ -46,6 +49,7 @@ void run_event_loop(){
                 t.call_time = t.interval + millis(); //call again in interval seconds
                 add_task(t);
             }
+        }
     }
 }
 
@@ -72,4 +76,19 @@ void set_device_name(char *name){
     g_device_name = name;
 }
 
+
+/* SERIAL PORT */
+void serialEvent(){
+    noInterrupts();
+    StaticJsonBuffer<200> jsonBuffer;
+    while(Serial.available()){
+        //should terminate automatically due to timeout if this doesn't work
+        jsonBuffer = Serial.readBytesUntil('}'); 
+    }
+    JsonObject& root = jsonBuffer.parseObject(json);
+    sender = root["sender"];
+    type = root["type"];
+    data = data["data"];
+    interrupts(); //re-enable interrupts
+}
 
