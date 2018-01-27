@@ -71,7 +71,7 @@ typedef enum {JSON, VESC} Encoding;
 
 /* Event struct */
 struct Event{
-    char *event; // The event name/identifier.
+    char *event; // The event name/identifier. TOPIC 
     JsonObject& data;
     /* maybe the port it was received on? */
 };
@@ -81,7 +81,7 @@ struct Event{
  */
 typedef void (*callback)(struct Event *e);
 
-
+callback 
 /*
  * ========== Global Variables ============
  */
@@ -143,3 +143,16 @@ void run_event_loop();
 void publish(String event, JsonObject& data, Port port);
 
 #endif
+
+/*
+Beginning of program:
+-register on_event, populate g_callback_lut
+-set_device_name
+-define tasks
+-add_task
+
+-run_event_loop
+Grab serial data, check for publish:
+-put topic/data into event variable
+g_callback_lut[event.event]
+*/

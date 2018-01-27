@@ -26,13 +26,13 @@ class Task{ //how task is added
 
 Task::Task(void (*run_callback)(void)), unsigned long int call_time_in, unsigned long int interval_in){
     run = run_callback;
-    call_time = call_time;
+    call_time = call_time + millis(); //take into account time after program start
     interval = interval;  
 }
 
 Task::Task(void (*run_callback)(void)){
     run = run_callback;
-    call_time = 0;
+    call_time = millis();
     interval = 0;    
 }
 
@@ -80,15 +80,37 @@ void set_device_name(char *name){
 /* SERIAL PORT */
 void serialEvent(){
     noInterrupts();
+    unsigned char stack = 0;
+    bool data_Json = false; 
     StaticJsonBuffer<200> jsonBuffer;
-    while(Serial.available()){
-        //should terminate automatically due to timeout if this doesn't work
-        jsonBuffer = Serial.readBytesUntil('}'); 
+    if(Serial.available()){
+        for (int i = 0; i < 200; i++){
+            jsonBuffer[i] = Serial.read();
+            if (stack == 2){
+                data_Json = true; //if there's a nested json packet in data
+            }
+            else if (jsonBuffer[i] == '{'){
+                stack++;
+            }
+            else if (jsonBuffer[i] == '}'){
+                stack--;
+            }
+            else if (stack == 0){
+                break;
+            }
+        }
     }
-    JsonObject& root = jsonBuffer.parseObject(json);
-    sender = root["sender"];
-    type = root["type"];
-    data = data["data"];
+    if (stack == 0){ //make sure the data is valid
+        JsonObject& root = jsonBuffer.parseObject(json);
+        source = root["source"];
+        type = root["type"]; 
+        data1 = root["data"];
+        if (data_Json == true){
+            JsonObject& data = data.parseObject(json);
+            topic_data = data["topic"];
+            data2 = data["data"];
+        }
+    }
     interrupts(); //re-enable interrupts
 }
 
