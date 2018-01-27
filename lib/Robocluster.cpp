@@ -10,6 +10,9 @@ void run_event_loop();
 void add_task(Task t);
 void set_device_name(char *name);
 
+std::map<String, callback> g_callback_lut;
+std::list<Task> g_tasks;
+
 /* CLASSES */
 class Task{ //how task is added 
     public:
@@ -38,19 +41,21 @@ Task::Task(void (*run_callback)(void)){
 
 
 /* LIBRARY FUNCTIONS */
-// Run any events in the event loop.
-void run_event_loop(){
-    while(1){
-        if (millis() > g_tasks.front().call_time ) {
-            Task t = g_tasks.front();
-            g_tasks.pop_front(); //delete front
-            t.run();
-            if (t.interval > 0){
-                t.call_time = t.interval + millis(); //call again in interval seconds
-                add_task(t);
-            }
-        }
-    }
+
+/* Event struct */
+struct Event{
+    char *event; // The event name/identifier. TOPIC 
+    JsonObject& data;
+    /* maybe the port it was received on? */
+};
+
+/* A callback is a function that takes in an event,
+ * and returns nothing. Not 100% sure if e should be a pointer or not.
+ */
+typedef void (*callback)(struct Event *e);
+
+void set_device_name(char *name){
+    g_device_name = name;
 }
 
 //add task back onto end of event loop
@@ -72,17 +77,34 @@ void add_task(Task t){
     }
 }
 
-void set_device_name(char *name){
-    g_device_name = name;
+void on_event(char *event, callback cb){
+
 }
 
+// Run any events in the event loop.
+void run_event_loop(){
+    while(1){
+        if (millis() > g_tasks.front().call_time ) {
+            Task t = g_tasks.front();
+            g_tasks.pop_front(); //delete front
+            t.run();
+            if (t.interval > 0){
+                t.call_time = t.interval + millis(); //call again in interval seconds
+                add_task(t);
+            }
+        }
+    }
+}
 
 /* SERIAL PORT */
 void serialEvent(){
     noInterrupts();
-    unsigned char stack = 0;
+
+    unsigned char stack = 0; //how to check if packet is complete
     bool data_Json = false; 
+    char source, type, data1, topic_data, data2; 
     StaticJsonBuffer<200> jsonBuffer;
+
     if(Serial.available()){
         for (int i = 0; i < 200; i++){
             jsonBuffer[i] = Serial.read();
@@ -102,14 +124,24 @@ void serialEvent(){
     }
     if (stack == 0){ //make sure the data is valid
         JsonObject& root = jsonBuffer.parseObject(json);
-        source = root["source"];
-        type = root["type"]; 
-        data1 = root["data"];
-        if (data_Json == true){
-            JsonObject& data = data.parseObject(json);
-            topic_data = data["topic"];
-            data2 = data["data"];
-        }
+        if (!root.success()) {
+            break; //should probably also send a message saying it failed
+        }   
+        else {
+            source = root["source"];
+            type = root["type"]; 
+            data1 = root["data"];
+            if (data_Json == true){ //if there's nested data
+                JsonObject& data = data.parseObject(json);
+                if (!data.success()){
+                    break; //should probably also send a message saying it failed
+                }
+                else{
+                    topic_data = data["topic"];
+                    data2 = data["data"];
+                }
+            }
+        }     
     }
     interrupts(); //re-enable interrupts
 }

@@ -81,7 +81,7 @@ struct Event{
  */
 typedef void (*callback)(struct Event *e);
 
-callback 
+ 
 /*
  * ========== Global Variables ============
  */
