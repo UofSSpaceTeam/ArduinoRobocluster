@@ -13,6 +13,10 @@ void set_device_name(char *name);
 std::map<String, callback> g_callback_lut;
 std::list<Task> g_tasks;
 
+/*
+g_callback_lut["grab_data"] = &read_sensor; //adding to the map
+*/
+
 /* CLASSES */
 class Task{ //how task is added 
     public:
@@ -41,6 +45,7 @@ Task::Task(void (*run_callback)(void)){
 
 
 /* LIBRARY FUNCTIONS */
+
 
 /* Event struct */
 struct Event{
@@ -76,8 +81,8 @@ void add_task(Task t){
         g_tasks.push_back(t);
     }
 }
-
-void on_event(char *event, callback cb){
+//populate map
+void on_event(char *event, callback cb){ //pass in topic for event
 
 }
 
@@ -101,7 +106,9 @@ void serialEvent(){
     noInterrupts();
 
     unsigned char stack = 0; //how to check if packet is complete
-    bool data_Json = false; 
+    bool data1_Json, data2_Json; 
+    data1_Json = false;
+    data2_Json = false;
     char source, type, data1, topic_data, data2; 
     StaticJsonBuffer<200> jsonBuffer;
 
@@ -109,9 +116,12 @@ void serialEvent(){
         for (int i = 0; i < 200; i++){
             jsonBuffer[i] = Serial.read();
             if (stack == 2){
-                data_Json = true; //if there's a nested json packet in data
+                data1_Json = true; //if there's a nested json packet in data
             }
-            else if (jsonBuffer[i] == '{'){
+            if (stack == 3){
+                data2_Json = true; //there's a third nested packet
+            }
+            if (jsonBuffer[i] == '{'){
                 stack++;
             }
             else if (jsonBuffer[i] == '}'){
@@ -131,14 +141,18 @@ void serialEvent(){
             source = root["source"];
             type = root["type"]; 
             data1 = root["data"];
-            if (data_Json == true){ //if there's nested data
+            if ((data1 == "publish") || (data1 == "heartbeat")){ //if there's nested data
                 JsonObject& data = data.parseObject(json);
                 if (!data.success()){
                     break; //should probably also send a message saying it failed
                 }
                 else{
-                    topic_data = data["topic"];
+                    topic_data = data["topic"]; //call g_callback_lut here
                     data2 = data["data"];
+                    Event a;
+                    a.event = topic_data;
+                    a.data = data2;//make sure g_callback_lut has topic inside
+                    g_callback_lut[a.event](a);
                 }
             }
         }     
