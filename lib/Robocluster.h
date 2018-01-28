@@ -1,10 +1,10 @@
 #ifndef ROBOCLUSTER
 #define ROBOCLUSTER
 
+#include "Robocluster.cpp"
 #include <map>
 #include <list>
 #include <ArduinoJson.h>
-
 
 /*
  * =============== Data Types ===============
@@ -18,11 +18,11 @@
 class Task {
 public:
 
-    Task(void (*run)(void),
-            unsigned long int call_time, unsigned long int interval);
+    Task(void (*run_callback)(void),
+            unsigned long int call_time_in, unsigned long int interval_in);
 
     /* Constructor assigning 0 to call_time and interval. */
-    Task(void (*run)(void));
+    Task(void (*run_callback)(void));
 
     /* Pointer to a function to run. Function should return void,
      * and take no arguments.
@@ -49,29 +49,29 @@ public:
  */
 typedef enum {JSON, VESC} Encoding;
 
-/* A transport protocol such as Serial, I2C, SPI, etc.
- * Abstract class, so you have to create subclasses for
- * Serial, I2C, implementations.
- * I'm also not sure how we want to go about instanciating ports.
- */
-class Port {
-public:
-    virtual byte *read();
-    virtual void write(byte *data);
-    bool enabled; // public to make things simple, might add getters/setters in future
-    Encoding encoding = JSON; // JSON by default
-};
+// /* A transport protocol such as Serial, I2C, SPI, etc.
+//  * Abstract class, so you have to create subclasses for
+//  * Serial, I2C, implementations.
+//  * I'm also not sure how we want to go about instanciating ports.
+//  */
+// class Port {
+// public:
+//     virtual byte *read();
+//     virtual void write(byte *data);
+//     bool enabled; // public to make things simple, might add getters/setters in future
+//     Encoding encoding = JSON; // JSON by default
+// };
 
-/* This one will need an actuall implementation. */
-class SerialPort: public Port{
-public:
-    byte *read();
-    void write(byte *data);
-};
+// /* This one will need an actuall implementation. */
+// class SerialPort: public Port{
+// public:
+//     byte *read();
+//     void write(byte *data);
+// };
 
 /* Event struct */
 struct Event{
-    char *event; // The event name/identifier.
+    char *event; // The event name/identifier. TOPIC 
     JsonObject& data;
     /* maybe the port it was received on? */
 };
@@ -81,7 +81,7 @@ struct Event{
  */
 typedef void (*callback)(struct Event *e);
 
-
+ 
 /*
  * ========== Global Variables ============
  */
@@ -143,3 +143,16 @@ void run_event_loop();
 void publish(String event, JsonObject& data, Port port);
 
 #endif
+
+/*
+Beginning of program:
+-register on_event, populate g_callback_lut
+-set_device_name
+-define tasks
+-add_task
+
+-run_event_loop
+Grab serial data, check for publish:
+-put topic/data into event variable
+g_callback_lut[event.event]
+*/
