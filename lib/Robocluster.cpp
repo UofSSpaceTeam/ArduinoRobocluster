@@ -141,7 +141,7 @@ void serialEvent(){
             source = root["source"];
             type = root["type"]; 
             data1 = root["data"];
-            if ((data1 == "publish") || (data1 == "heartbeat")){ //if there's nested data
+            if ((data1 == "publish") || (data1 == "heartbeat")){ //if there's nested data, will expand later
                 JsonObject& data = data.parseObject(json);
                 if (!data.success()){
                     break; //should probably also send a message saying it failed
@@ -149,10 +149,10 @@ void serialEvent(){
                 else{
                     topic_data = data["topic"]; //call g_callback_lut here
                     data2 = data["data"];
-                    Event a;
-                    a.event = topic_data;
-                    a.data = data2;//make sure g_callback_lut has topic inside
-                    g_callback_lut[a.event](a);
+                    Event data;
+                    data.event = topic_data;
+                    data.data = data2;//make sure g_callback_lut has topic inside
+                    g_callback_lut[data.event](data);
                 }
             }
         }     
