@@ -13,9 +13,11 @@ void set_device_name(char *name);
 std::map<String, callback> g_callback_lut;
 std::list<Task> g_tasks;
 
-/*
-g_callback_lut["grab_data"] = &read_sensor; //adding to the map
-*/
+/* A callback is a function that takes in an event,
+ * and returns nothing. Not 100% sure if e should be a pointer or not.
+ */
+typedef void (*callback)(struct Event *e);
+//typedef enum {JSON, VESC} Encoding; //not really using this
 
 /* CLASSES */
 class Task{ //how task is added 
@@ -24,8 +26,8 @@ class Task{ //how task is added
         void (*run)(void) //pointer to function to run, function should return void
 
         //constructor with all arguments
-        Task(void (*run_callback)(void), unsigned long int call_time, 
-            unsigned long int interval);
+        Task(void (*run_callback)(void), unsigned long int call_time_in, 
+            unsigned long int interval_in);
 
         //constructor with no arguments
         Task(void (*run_callback)(void));
@@ -33,31 +35,31 @@ class Task{ //how task is added
 
 Task::Task(void (*run_callback)(void)), unsigned long int call_time_in, unsigned long int interval_in){
     run = run_callback;
-    call_time = call_time + millis(); //take into account time after program start
-    interval = interval;  
+    if (call_time_in){
+        run_callback();
+    }
+    else{
+        call_time = call_time_in + millis(); //take into account time after program start
+    }
+    interval = interval_in;  
 }
 
 Task::Task(void (*run_callback)(void)){
-    run = run_callback;
-    call_time = millis();
-    interval = 0;    
+    run_callback(); //just run it, assume non repeating
+    //run = run_callback;
+    //call_time = millis();
+    //interval = 0;
 }
 
 
 /* LIBRARY FUNCTIONS */
-
-
 /* Event struct */
 struct Event{
     char *event; // The event name/identifier. TOPIC 
-    JsonObject& data;
+    char& data;  // Could also be a JsonObject??
+    // JsonObject& data; 
     /* maybe the port it was received on? */
 };
-
-/* A callback is a function that takes in an event,
- * and returns nothing. Not 100% sure if e should be a pointer or not.
- */
-typedef void (*callback)(struct Event *e);
 
 void set_device_name(char *name){
     g_device_name = name;
@@ -68,22 +70,24 @@ void add_task(Task t){
     unsigned char index = 0;
     bool inserted = false;
 
-    for (std::list<Task>::const_iterator iterator = g_tasks.begin(); iterator != g_tasks.end(); ++iterator){
-        Task& iter = *iterator;
+    // how to iterate through a list, can't normally find index of a list 
+    for (std::list<Task>::const_iterator iterator = g_tasks.begin(); iterator != g_tasks.end(); ++iterator){ 
+        Task& iter = *iterator; //temporary variable
         if (t.call_time > iter.call_time){
             g_tasks.insert (index, t);
             inserted = true;
             break;
         }
-        index ++; //increment with each loop
+        index++; //increment with each loop
     }
     if (inserted == false){ //if the task wasn't inserted after the loop ended it must have the largest call time
         g_tasks.push_back(t);
     }
 }
+
 //populate map
 void on_event(char *event, callback cb){ //pass in topic for event
-
+    g_callback_lut["event"] = &cb; //adding to the map
 }
 
 // Run any events in the event loop.
@@ -101,26 +105,24 @@ void run_event_loop(){
     }
 }
 
-/* SERIAL PORT */
+/*
+void publish(String event, JsonObject& data, Port port){
+
+}
+*/
+
+/* SERIAL PORT 
+Note: This handler isn't coded in the best way, too much processing inside of it
+*/
 void serialEvent(){
     noInterrupts();
-
-    unsigned char stack = 0; //how to check if packet is complete
-    bool data1_Json, data2_Json; 
-    data1_Json = false;
-    data2_Json = false;
-    char source, type, data1, topic_data, data2; 
+    uint8_t stack = 0; //how to check if packet is complete, shouldn't need too many bits
+    char source, type, data, published_topic, published_data, heartbeat_source, heartbeat_listen; 
     StaticJsonBuffer<200> jsonBuffer;
 
     if(Serial.available()){
-        for (int i = 0; i < 200; i++){
+        for (int i = 0; i < 200; i++){ //read json data
             jsonBuffer[i] = Serial.read();
-            if (stack == 2){
-                data1_Json = true; //if there's a nested json packet in data
-            }
-            if (stack == 3){
-                data2_Json = true; //there's a third nested packet
-            }
             if (jsonBuffer[i] == '{'){
                 stack++;
             }
@@ -132,7 +134,7 @@ void serialEvent(){
             }
         }
     }
-    if (stack == 0){ //make sure the data is valid
+    if (stack == 0){ //process data, make sure it's valid
         JsonObject& root = jsonBuffer.parseObject(json);
         if (!root.success()) {
             break; //should probably also send a message saying it failed
@@ -140,19 +142,38 @@ void serialEvent(){
         else {
             source = root["source"];
             type = root["type"]; 
-            data1 = root["data"];
-            if ((data1 == "publish") || (data1 == "heartbeat")){ //if there's nested data, will expand later
-                JsonObject& data = data.parseObject(json);
-                if (!data.success()){
+            data = root["data"];
+
+            if (data == "publish"){ //call the callback function
+                JsonObject& publish = data.parseObject(json);
+                if (!publish.success()){
                     break; //should probably also send a message saying it failed
                 }
                 else{
-                    topic_data = data["topic"]; //call g_callback_lut here
-                    data2 = data["data"];
-                    Event data;
-                    data.event = topic_data;
-                    data.data = data2;//make sure g_callback_lut has topic inside
-                    g_callback_lut[data.event](data);
+                    published_topic = publish["topic"]; //call g_callback_lut here
+                    published_data = publish["data"];
+
+                    Event packet_data; //make structure to put into callback
+                    packet_data.event = published_topic;
+                    packet_data.data = published_data;
+
+                    if (g_callback_lut.find(packet_data.event) == g_callback_lut.end()){ //look for event key
+                        break; //no key exists for said event data
+                    }
+                    else {
+                        g_callback_lut[packet_data.event](data); //key is found, run
+                    }
+                }
+            }
+            else if (data == "heartbeat"){
+                JsonObject& heartbeat = heartbeat.parseObject(json);
+                if (!heartbeat.success()){
+                    break;
+                }
+                else{
+                    heartbeat_source = heartbeat["source"];
+                    heartbeat_listen = heartbeat["listen"];
+                    //need to do something with heartbeat data
                 }
             }
         }     

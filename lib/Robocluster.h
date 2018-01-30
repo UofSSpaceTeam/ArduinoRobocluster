@@ -47,7 +47,7 @@ public:
 /* How to format the data. JSON for now,
  * maybe we'll add VESC later.
  */
-typedef enum {JSON, VESC} Encoding;
+//typedef enum {JSON, VESC} Encoding;
 
 // /* A transport protocol such as Serial, I2C, SPI, etc.
 //  * Abstract class, so you have to create subclasses for
@@ -144,15 +144,3 @@ void publish(String event, JsonObject& data, Port port);
 
 #endif
 
-/*
-Beginning of program:
--register on_event, populate g_callback_lut
--set_device_name
--define tasks
--add_task
-
--run_event_loop
-Grab serial data, check for publish:
--put topic/data into event variable
-g_callback_lut[event.event]
-*/
