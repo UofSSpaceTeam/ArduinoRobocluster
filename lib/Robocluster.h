@@ -1,7 +1,6 @@
 #ifndef ROBOCLUSTER
 #define ROBOCLUSTER
 
-#include "Robocluster.cpp"
 #include <map>
 #include <list>
 #include <ArduinoJson.h>
@@ -140,7 +139,7 @@ void run_event_loop();
  * This will have to wrap the event and data into
  * an Event like JSON object before sending over the wire.
  */
-void publish(String event, JsonObject& data, Port port);
+void publish(String event, JsonObject& data);
 
 #endif
 

@@ -5,35 +5,10 @@
 #include <ArduinoJson.h>
 
 
-char *g_device_name, sender, type, data;
-void run_event_loop();
-void add_task(Task t);
-void set_device_name(char *name);
 
-std::map<String, callback> g_callback_lut;
-std::list<Task> g_tasks;
 
-/* A callback is a function that takes in an event,
- * and returns nothing. Not 100% sure if e should be a pointer or not.
- */
-typedef void (*callback)(struct Event *e);
-//typedef enum {JSON, VESC} Encoding; //not really using this
 
-/* CLASSES */
-class Task{ //how task is added 
-    public:
-        unsigned long int call_time, interval;
-        void (*run)(void) //pointer to function to run, function should return void
-
-        //constructor with all arguments
-        Task(void (*run_callback)(void), unsigned long int call_time_in, 
-            unsigned long int interval_in);
-
-        //constructor with no arguments
-        Task(void (*run_callback)(void));
-}
-
-Task::Task(void (*run_callback)(void)), unsigned long int call_time_in, unsigned long int interval_in){
+Task::Task(void (*run_callback)(void), unsigned long int call_time_in, unsigned long int interval_in){
     run = run_callback;
     if (call_time_in){
         run_callback();
