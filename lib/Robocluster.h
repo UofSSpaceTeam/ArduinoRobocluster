@@ -142,5 +142,10 @@ void run_event_loop();
  */
 void publish(String event, JsonObject& data, Port port);
 
+/* Send a heartbeat message, used to let other devices
+ * know of current device's existence. 
+ */
+void heartbeat();
+
 #endif
 
