@@ -105,11 +105,21 @@ void run_event_loop(){
     }
 }
 
-/*
-void publish(String event, JsonObject& data, Port port){
 
+void publish(String event, JsonObject& data){
+    string slash = '/' //need to use for topic field
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& root = jsonBuffer.createObject();
+
+    root["source"] = g_device_name;
+    root["type"] = "publish";
+    JsonArray& data = root.createNestedArray("data");
+    data["topic"] = g_device_name + slash + event; 
+    data["data"] = data;
+
+    data.printTo(Serial); //pass into serial
 }
-*/
+
 
 /* SERIAL PORT 
 Note: This handler isn't coded in the best way, too much processing inside of it
