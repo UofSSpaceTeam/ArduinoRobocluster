@@ -6,6 +6,11 @@
 
 
 
+char *sender, *type, *data;
+
+std::map<String, callback> g_callback_lut;
+std::list<Task> g_tasks;
+
 
 
 Task::Task(void (*run_callback)(void), unsigned long int call_time_in, unsigned long int interval_in){
@@ -80,11 +85,34 @@ void run_event_loop(){
     }
 }
 
-/*
-void publish(String event, JsonObject& data, Port port){
 
+void publish(String event, JsonObject& data){
+    string slash = '/' //need to use for topic field
+    StaticJsonBuffer<200> jsonBuffer_publish;
+    JsonObject& root = jsonBuffer_publish.createObject();
+
+    root["source"] = g_device_name;
+    root["type"] = "publish";
+    JsonArray& data_nested = root.createNestedObject("data");
+    data_nested["topic"] = g_device_name + slash + event; 
+    data_nested["data"] = data;
+
+    root.printTo(Serial); //pass into serial
 }
-*/
+
+void heartbeat(){
+    StaticJsonBuffer<200> jsonBuffer_heartbeat;
+    JsonObject& root = jsonBuffer_heartbeat.createObject();
+
+    root["source"] = g_device_name;
+    root["type"] = "heartbeat";
+    JsonArray& data_nested = root.createNestedObject("data");
+    data_nested["source"] = g_device_name; 
+    data_nested["listen"] = "/dev/ttyACM0"; 
+    //I don't actually know what the port field should be so this is a wild guess
+
+    root.printTo(Serial); //pass into serial
+}
 
 /* SERIAL PORT 
 Note: This handler isn't coded in the best way, too much processing inside of it

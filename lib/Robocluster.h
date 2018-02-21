@@ -70,7 +70,7 @@ public:
 
 /* Event struct */
 struct Event{
-    char *event; // The event name/identifier. TOPIC 
+    char *event; // The event name/identifier. TOPIC
     JsonObject& data;
     /* maybe the port it was received on? */
 };
@@ -80,7 +80,7 @@ struct Event{
  */
 typedef void (*callback)(struct Event *e);
 
- 
+
 /*
  * ========== Global Variables ============
  */
@@ -140,6 +140,13 @@ void run_event_loop();
  * an Event like JSON object before sending over the wire.
  */
 void publish(String event, JsonObject& data);
+
+
+/* Send a heartbeat message, used to let other devices
+ * know of current device's existence.
+ */
+void heartbeat();
+
 
 #endif
 
