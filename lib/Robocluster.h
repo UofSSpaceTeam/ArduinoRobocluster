@@ -141,6 +141,14 @@ void run_event_loop();
  */
 void publish(String event, JsonObject& data);
 
+/* Defines an interrupt for every 200ms. Must use 
+*  following code for interrupt handler. 
+*  Only for ATmega168/328
+ISR(TIMER1_COMPA_vect){ //timer1 interrupt 5Hz/200ms
+    heartbeat();
+}
+*/
+void heartbeat_interrupt();
 
 /* Send a heartbeat message, used to let other devices
  * know of current device's existence.
